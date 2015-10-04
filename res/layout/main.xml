@@ -4,6 +4,12 @@
               android:layout_width="fill_parent"
               android:layout_height="fill_parent">
 
+    <nl.igorski.example.SequencerView
+               android:id="@+id/SequencerView"
+               android:layout_width="match_parent"
+               android:layout_height="50dp"
+               android:hardwareAccelerated="true" />
+
     <TextView
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"

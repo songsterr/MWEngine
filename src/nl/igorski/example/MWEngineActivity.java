@@ -30,10 +30,9 @@ public class MWEngineActivity extends Activity
     private SynthInstrument    _synth2;
     private Filter             _filter;
     private Phaser             _phaser;
-    private Delay              _delay;
     private MWEngine           _engine;
+    private SequencerView      _sequencerView;
     private Vector<SynthEvent> _synth1Events;
-    private Vector<SynthEvent> _synth2Events;
 
     private boolean _sequencerPlaying = false;
     private boolean _inited           = false;
@@ -55,7 +54,8 @@ public class MWEngineActivity extends Activity
     public void onCreate( Bundle savedInstanceState )
     {
         super.onCreate( savedInstanceState );
-        setContentView( R.layout.main );
+        setContentView(R.layout.main);
+
 
         init();
     }
@@ -70,6 +70,10 @@ public class MWEngineActivity extends Activity
         // STEP 1 : preparing the native audio engine
 
         _engine = new MWEngine( getApplicationContext(), new StateObserver() );
+
+        // prevent core sleeping (which will lead to drifting audio)
+
+        _sequencerView = ( SequencerView ) findViewById( R.id.SequencerView );
 
         // get the recommended buffer size for this device (NOTE : lower buffer sizes may
         // provide lower latency, but make sure all buffer sizes are powers of two of
@@ -102,67 +106,34 @@ public class MWEngineActivity extends Activity
         // STEP 2 : let's create some instruments =D
 
         _synth1 = new SynthInstrument();
-        _synth2 = new SynthInstrument();
 
-        _synth1.getTuningForOscillator( 0 ).setWaveform( 2 ); // sawtooth (see global.h for enumerations)
-        _synth2.getTuningForOscillator( 0 ).setWaveform( 5 ); // pulse width modulation
+        _synth1.getTuningForOscillator( 0 ).setWaveform( 2 );
 
         // a high decay for synth 1 (bubblier effect)
-        _synth1.getAdsr().setDecay( .9f );
+        _synth1.getAdsr().setDecay(1f);
 
         // add a filter to synth 1
         maxFilterCutoff = ( float ) SAMPLE_RATE / 8;
 
-        _filter = new Filter( maxFilterCutoff / 2, ( float ) ( Math.sqrt( 1 ) / 2 ), minFilterCutoff, maxFilterCutoff, 0f, 1 );
-        _synth1.getAudioChannel().getProcessingChain().addProcessor( _filter );
+        //_filter = new Filter( maxFilterCutoff, ( float ) ( Math.sqrt( 1 ) / 2 ), minFilterCutoff, maxFilterCutoff, 0f, 1 );
+        //_synth1.getAudioChannel().getProcessingChain().addProcessor( _filter );
 
         // add a phaser to synth 1
-        _phaser = new Phaser( .5f, .7f, .5f, 440.f, 1600.f );
-        _synth1.getAudioChannel().getProcessingChain().addProcessor( _phaser );
-
-        // add some funky delay to synth 2
-        _delay = new Delay( 250f, 2000f, .35f, .5f, 1 );
-        _synth2.getAudioChannel().getProcessingChain().addProcessor(_delay);
-
-        // prepare synthesizer volumes
-        _synth2.setVolume( .7f );
+        //_phaser = new Phaser( .5f, .7f, .5f, 440.f, 1600.f );
+        //_synth1.getAudioChannel().getProcessingChain().addProcessor( _phaser );
+        _synth1.setVolume(1f);
 
         // STEP 3 : let's create some music !
 
         _synth1Events = new Vector<SynthEvent>();   // remember : strong references!
-        _synth2Events = new Vector<SynthEvent>();   // remember : strong references!
         sequencer.setTempoNow(130.0f, 4, 4);      // 130 BPM at 4/4 time
 
-        // bubbly sixteenth note bass line for synth 1
+        // Quarter note beat metronome for synth 1
 
-        createSynthEvent( _synth1, Pitch.note( "C", 2 ),  0 );
-        createSynthEvent( _synth1, Pitch.note( "C", 2 ),  1 );
-        createSynthEvent( _synth1, Pitch.note( "C", 3 ),  2 );
-        createSynthEvent( _synth1, Pitch.note( "C", 2 ),  3 );
-        createSynthEvent( _synth1, Pitch.note( "A#", 1 ), 4 );
-        createSynthEvent( _synth1, Pitch.note( "C", 2 ),  5 );
-        createSynthEvent( _synth1, Pitch.note( "C", 3 ),  6 );
-        createSynthEvent( _synth1, Pitch.note( "C", 2 ),  7 );
-        createSynthEvent( _synth1, Pitch.note( "C", 2 ),  8 );
-        createSynthEvent( _synth1, Pitch.note( "C", 2 ),  9 );
-        createSynthEvent( _synth1, Pitch.note( "D#", 2 ), 10 );
-        createSynthEvent( _synth1, Pitch.note( "C", 2 ),  11 );
-        createSynthEvent( _synth1, Pitch.note( "A#", 1 ), 12 );
-        createSynthEvent( _synth1, Pitch.note( "A#", 2 ), 13 );
-        createSynthEvent( _synth1, Pitch.note( "C", 2 ),  14 );
-        createSynthEvent( _synth1, Pitch.note( "C", 2 ),  15 );
-
-        // off-beat minor seventh chord stabs for synth 2
-
-        createSynthEvent( _synth2, Pitch.note( "C", 3 ),  4 );
-        createSynthEvent( _synth2, Pitch.note( "G", 3 ),  4 );
-        createSynthEvent( _synth2, Pitch.note( "A#", 3 ), 4 );
-        createSynthEvent( _synth2, Pitch.note( "D#", 3 ), 4 );
-
-        createSynthEvent( _synth2, Pitch.note( "D", 3 ), 8 );
-        createSynthEvent( _synth2, Pitch.note( "A", 3 ), 8 );
-        createSynthEvent( _synth2, Pitch.note( "C", 3 ), 8 );
-        createSynthEvent( _synth2, Pitch.note( "F", 3 ), 8 );
+        createSynthEvent( _synth1, Pitch.note( "F", 4 ),  0 );
+        createSynthEvent( _synth1, Pitch.note( "C", 4 ),  4 );
+        createSynthEvent( _synth1, Pitch.note( "C", 4 ),  8 );
+        createSynthEvent( _synth1, Pitch.note( "C", 4 ),  12 );
 
         // STEP 4 : attach event handler to the UI elements (see main.xml layout)
 
@@ -170,13 +141,13 @@ public class MWEngineActivity extends Activity
         playPauseButton.setOnClickListener( new PlayClickHandler() );
 
         final SeekBar filterSlider = ( SeekBar ) findViewById( R.id.FilterCutoffSlider );
-        filterSlider.setOnSeekBarChangeListener( new FilterCutOffChangeHandler() );
+        filterSlider.setVisibility(View.GONE);
 
         final SeekBar decaySlider = ( SeekBar ) findViewById( R.id.SynthDecaySlider );
-        decaySlider.setOnSeekBarChangeListener( new SynthDecayChangeHandler() );
+        decaySlider.setOnSeekBarChangeListener(new SynthDecayChangeHandler());
 
         final SeekBar feedbackSlider = ( SeekBar ) findViewById( R.id.MixSlider );
-        feedbackSlider.setOnSeekBarChangeListener( new DelayMixChangeHandler() );
+        feedbackSlider.setVisibility(View.GONE);
 
         final SeekBar tempoSlider = ( SeekBar ) findViewById( R.id.TempoSlider );
         tempoSlider.setOnSeekBarChangeListener( new TempoChangeHandler() );
@@ -227,40 +198,12 @@ public class MWEngineActivity extends Activity
         }
     }
 
-    /**
-     *  invoked when user interacts with the filter cutoff slider
-     */
-    private class FilterCutOffChangeHandler implements SeekBar.OnSeekBarChangeListener
-    {
-        public void onProgressChanged( SeekBar seekBar, int progress, boolean fromUser )
-        {
-            _filter.setCutoff(( progress / 100f ) * ( maxFilterCutoff - minFilterCutoff ) + minFilterCutoff );
-        }
-
-        public void onStartTrackingTouch( SeekBar seekBar ) {}
-        public void onStopTrackingTouch ( SeekBar seekBar ) {}
-    }
-
     private class SynthDecayChangeHandler implements SeekBar.OnSeekBarChangeListener
     {
         public void onProgressChanged( SeekBar seekBar, int progress, boolean fromUser )
         {
             _synth1.getAdsr().setDecay( progress / 100f );
             _synth1.updateEvents(); // update all synth events to match new ADSR properties
-        }
-
-        public void onStartTrackingTouch( SeekBar seekBar ) {}
-        public void onStopTrackingTouch ( SeekBar seekBar ) {}
-    }
-
-    /**
-     *  invoked when user interacts with the delay mix slider
-     */
-    private class DelayMixChangeHandler implements SeekBar.OnSeekBarChangeListener
-    {
-        public void onProgressChanged( SeekBar seekBar, int progress, boolean fromUser )
-        {
-            _delay.setFeedback( progress / 100f );
         }
 
         public void onStartTrackingTouch( SeekBar seekBar ) {}
@@ -326,7 +269,7 @@ public class MWEngineActivity extends Activity
             switch ( _notificationEnums[ aNotificationId ])
             {
                 case SEQUENCER_POSITION_UPDATED:
-                    Log.d( LOG_TAG, "sequencer position : " + aNotificationValue );
+                    //Log.d( LOG_TAG, "sequencer position : " + aNotificationValue );
                     break;
             }
         }
@@ -344,14 +287,11 @@ public class MWEngineActivity extends Activity
      */
     private void createSynthEvent( SynthInstrument synth, double frequency, int position )
     {
-        final int duration     = 1; // 16th note at a BAR_SUBDIVISION of 16 (see MWEngine)
+        final float duration   = 1f; // 16th note at a BAR_SUBDIVISION of 16 (see MWEngine)
         final SynthEvent event = new SynthEvent(( float ) frequency, position, duration, synth );
-
+        Log.d(LOG_TAG, "creating event at " + position + " with freq " + frequency);
         event.calculateBuffers();
 
-        if ( synth == _synth1 )
-            _synth1Events.add( event );
-        else
-            _synth2Events.add( event );
+        _synth1Events.add( event );
     }
 }

@@ -1,8 +1,10 @@
-apply plugin: 'com.android.application'
+apply plugin: 'com.android.library'
 
 android {
     compileSdkVersion 21
     buildToolsVersion "21.1.2"
+
+
 
     sourceSets {
         main {
@@ -13,4 +15,13 @@ android {
             res.srcDirs = ['res']
         }
     }
+}
+
+
+task swig(type:Exec) {
+    commandLine './build.sh'
+}
+
+gradle.projectsEvaluated {
+    assemble.dependsOn(swig)
 }

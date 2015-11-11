@@ -1,5 +1,17 @@
 apply plugin: 'com.android.library'
 
+task swig(type:Exec) {
+    workingDir = "${project(':MWEngine').projectDir}"
+
+    commandLine "./build.sh"
+
+//    standardOutput = new FileOutputStream("${project(':MWEngine').projectDir}/build/swig.log")
+//    errorOutput = new FileOutputStream("${project(':MWEngine').projectDir}/build/swig.err")
+    doFirst {
+        println "Execution SWIG..."
+    }
+}
+
 android {
     compileSdkVersion 21
     buildToolsVersion "21.1.2"
@@ -8,18 +20,14 @@ android {
         main {
             manifest.srcFile 'AndroidManifest.xml'
             java.srcDirs = ['src']
-            jni.srcDirs = ['jni']
+            jni.srcDirs = []
             resources.srcDirs = ['src']
             res.srcDirs = ['res']
         }
     }
 }
 
-task swig(type:Exec) {
-    commandLine './build.sh'
-    doFirst {
-        println "Execution SWIG..."
-    }
+afterEvaluate {
+    preReleaseBuild.dependsOn swig
+    preDebugBuild.dependsOn swig
 }
-
-preBuild.dependsOn(swig)

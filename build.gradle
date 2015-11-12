@@ -32,6 +32,10 @@ android {
             moduleName 'libmwengine'
         }
     }
+
+    lintOptions {
+        abortOnError false
+    }
 }
 
 afterEvaluate {

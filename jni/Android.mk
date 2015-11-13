@@ -45,6 +45,8 @@ processors/waveshaper.cpp \
 generators/wavegenerator.cpp \
 generators/synthesizer.cpp \
 utilities/bufferutility.cpp \
+utilities/eventutility.cpp \
+utilities/levelutility.cpp \
 utilities/bulkcacher.cpp \
 utilities/diskwriter.cpp \
 processingchain.cpp \

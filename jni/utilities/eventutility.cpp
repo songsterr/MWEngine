@@ -30,7 +30,7 @@ void EventUtility::positionEvent( BaseAudioEvent* audioEvent, int startMeasure, 
     int bytesPerBar = AudioEngine::bytes_per_bar; // will always match current tempo, time sig at right sample rate
 
     int startOffset = bytesPerBar * startMeasure;
-    startOffset   += ( bytesPerBar / subdivisions ) * offset;
+    startOffset   += offset * bytesPerBar / subdivisions;
 
     audioEvent->setSampleStart( startOffset );
     audioEvent->setSampleEnd( audioEvent->getSampleStart() + audioEvent->getSampleLength() );

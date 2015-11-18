@@ -1,9 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2014 Igor Zinken - http://www.igorski.nl
- *
- * wave table generation adapted from sources by Matt @ hackmeopen.com
+ * Copyright (c) 2013-2015 Igor Zinken - http://www.igorski.nl
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -22,21 +20,19 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef __WAVEGENERATOR_H_INCLUDED__
-#define __WAVEGENERATOR_H_INCLUDED__
+#ifndef __DEBUG_H_INCLUDED__
+#define __DEBUG_H_INCLUDED__
 
-#include "../global.h"
-#include "../wavetable.h"
+/* convenience log methods that hook into the Android logcat */
 
-namespace WaveGenerator
+namespace Debug
 {
-    // generate a WaveTable for given waveformType
-    // NOTE : wave table generation has high CPU demands
-    // instead of doing this during live audio synthesis, it is
-    // better to precache the WaveTables upon application start
-    // (also see TablePool for maintaining the cache)
-
-    extern void generate( WaveTable* waveTable, int waveformType );
+    extern void log( char const* aMessage );
+    extern void log( char const* aMessage, char const* aValue );
+    extern void log( char const* aMessage, int aValue );
+    extern void log( char const* aMessage, unsigned int aValue );
+    extern void log( char const* aMessage, float aValue );
+    extern void log( char const* aMessage, double aValue );
 }
 
 #endif

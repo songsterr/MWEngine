@@ -412,13 +412,13 @@ namespace AudioEngine
         time_sig_beat_unit   = queuedTime_sig_beat_unit;
 
         float oldPosition     = ( float ) bufferPosition / ( float ) max_buffer_position;  // pct of loop offset
-        float tempBytesPerBar = ((( float ) AudioEngineProps::SAMPLE_RATE * 60 ) / tempo ) * 4; // a full bar at 4 beats per measure
+        float tempBytesPerBar = ((( float ) AudioEngineProps::SAMPLE_RATE * 60 ) / tempo ) * time_sig_beat_amount; // a full bar at 4 beats per measure
 
-        bytes_per_beat        = ( int ) ( tempBytesPerBar / ( float ) time_sig_beat_unit );
+        bytes_per_beat        = ( int ) ( tempBytesPerBar / ( float ) time_sig_beat_amount );
 
         // bytes per tick equals the smallest note size the sequencer acknowledges (i.e. 8ths, 16ths, 32nds, 64ths, etc.)
         bytes_per_tick        = bytes_per_beat / beat_subdivision;
-        bytes_per_bar         = ( int ) ( tempBytesPerBar / ( float ) time_sig_beat_unit * ( float ) time_sig_beat_amount ); // in case of non-equals amount vs. unit
+        bytes_per_bar         = bytes_per_tick * beat_subdivision * time_sig_beat_amount; // in case of non-equals amount vs. unit
 
         max_buffer_position = ( bytes_per_bar * amount_of_bars ); // TODO: this implies single time sig for all bars!!
 

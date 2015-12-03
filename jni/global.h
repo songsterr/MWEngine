@@ -33,6 +33,7 @@
 
 #define PRECISION 2
 #define USE_JNI
+// #define ALLOW_RECORDING
 
 namespace AudioEngineProps
 {

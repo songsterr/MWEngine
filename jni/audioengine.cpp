@@ -116,12 +116,16 @@ namespace AudioEngine
         int loopOffset = 0;         // the offset within the current buffer where we start reading from the current loops start offset
         int loopAmount = 0;         // amount of samples we must read from the current loops start offset
 
+#ifdef ALLOW_RECORDING
         float recbufferIn[ bufferSize ];                  // used for recording from device input
+#endif
         float outbuffer  [ bufferSize * outputChannels ]; // the output buffer rendered by the hardware
 
         // generate buffers for temporary channel buffer writes
         AudioBuffer* inbuffer  = new AudioBuffer( outputChannels, bufferSize ); // accumulates all channels ("master strip")
+#ifdef ALLOW_RECORDING
         AudioBuffer* recbuffer = new AudioBuffer( AudioEngineProps::INPUT_CHANNELS, bufferSize );
+#endif
 
         // ensure all audiochannel buffers have the correct properties (in case engine is
         // restarting after changing buffer size, for instance)
@@ -174,6 +178,7 @@ namespace AudioEngine
                 }
             }
 
+#ifdef ALLOW_RECORDING
             // record audio from Android device ?
             if ( recordFromDevice && AudioEngineProps::INPUT_CHANNELS > 0 )
             {
@@ -192,6 +197,7 @@ namespace AudioEngine
                     }
                 }
             }
+#endif
 
             // channel loop
             int j = 0;
@@ -344,6 +350,7 @@ namespace AudioEngine
             if ( !bouncing )
                 android_AudioOut( p, outbuffer, bufferSize * outputChannels );
 
+#ifdef ALLOW_RECORDING
             // record the output if recording state is active
             if ( playing && ( recordOutput || recordFromDevice ))
             {
@@ -368,6 +375,7 @@ namespace AudioEngine
                     }
                 }
             }
+#endif
 
             // tempo update queued ?
             if ( queuedTempo != tempo )
@@ -377,7 +385,9 @@ namespace AudioEngine
 
         // clear heap memory allocated before thread loop
         delete inbuffer;
+#ifdef ALLOW_RECORDING
         delete recbuffer;
+#endif
     }
 
     void stop()

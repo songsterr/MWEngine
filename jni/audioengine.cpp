@@ -334,7 +334,7 @@ namespace AudioEngine
                 // update the buffer pointers and sequencer position
                 if ( playing )
                 {
-                    if ( ++bufferPosition % bytes_per_tick == 0 )
+                    if ( bufferPosition % bytes_per_tick == 0 )
                        handleSequencerPositionUpdate( i );
 
                     if ( bufferPosition >= max_buffer_position )
@@ -343,6 +343,8 @@ namespace AudioEngine
                     if ( marked_buffer_position != 1 &&
                          bufferPosition == marked_buffer_position )
                          Notifier::broadcast( Notifications::MARKER_POSITION_REACHED );
+
+                    bufferPosition++;
                }
             }
             // render the buffer in the audio hardware (unless we're bouncing as writing the output

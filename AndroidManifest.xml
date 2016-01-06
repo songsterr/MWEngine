@@ -11,7 +11,7 @@
 
     <!-- permissions -->
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!--<uses-permission android:name="android.permission.RECORD_AUDIO" />-->
 
     <!--&lt;!&ndash; note the orientation configChange (prevents restarting of render thread on rotation) &ndash;&gt;-->
 

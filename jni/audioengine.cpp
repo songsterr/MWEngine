@@ -473,11 +473,7 @@ namespace AudioEngine
 
     void handleSequencerPositionUpdate( int pendingSamplesCount )
     {
-        ++stepPosition;
-
-        // larger-equal check as we can remove measures from the sequencer while running
-        if ( stepPosition >= max_step_position )
-            stepPosition = min_step_position;
+        stepPosition = bufferPosition / bytes_per_tick;
 
         Notifier::broadcast( Notifications::SEQUENCER_POSITION_UPDATED, (stepPosition << 16) | pendingSamplesCount);
     }

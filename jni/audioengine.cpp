@@ -51,8 +51,6 @@ namespace AudioEngine
     int min_buffer_position    = 0;  // initially 0, but can differ when looping specific measures
     int max_buffer_position    = 0;  // calculated when sequencer API creates output
     int marked_buffer_position = -1; // -1 means no marker has been set, no notifications will go out
-    int min_step_position      = 0;
-    int max_step_position      = 16;
 
     bool playing          = false;
     bool recordOutput     = false;
@@ -65,7 +63,6 @@ namespace AudioEngine
     /* buffer read/write pointers */
 
     int bufferPosition = 0;
-    int stepPosition   = 0;
 
     /* tempo related */
 
@@ -407,7 +404,6 @@ namespace AudioEngine
         sequencer::clearEvents();
 
         bufferPosition   = 0;
-        stepPosition     = 0;
         recordOutput     = false;
         recordFromDevice = false;
         bouncing         = false;
@@ -473,7 +469,7 @@ namespace AudioEngine
 
     void handleSequencerPositionUpdate( int pendingSamplesCount )
     {
-        stepPosition = bufferPosition / bytes_per_tick;
+        int stepPosition = bufferPosition / bytes_per_tick;
 
         Notifier::broadcast( Notifications::SEQUENCER_POSITION_UPDATED, (stepPosition << 16) | pendingSamplesCount);
     }

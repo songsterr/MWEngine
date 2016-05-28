@@ -112,15 +112,7 @@ void SequencerController::setLoopRange( int aStartPosition, int aEndPosition, in
     {
         AudioEngine::bufferPosition = AudioEngine::min_buffer_position;
     }
-    AudioEngine::min_step_position = ( aStartPosition / AudioEngine::bytes_per_bar ) * aStepsPerBar;
-    AudioEngine::max_step_position = ( aEndPosition   / AudioEngine::bytes_per_bar ) * aStepsPerBar;
 
-    // keep current sequencer step within the new loop range
-    if ( AudioEngine::stepPosition <  AudioEngine::min_step_position ||
-         AudioEngine::stepPosition >= AudioEngine::max_step_position )
-    {
-        AudioEngine::stepPosition = AudioEngine::min_step_position;
-    }
     updateStepsPerBar( aStepsPerBar );
 }
 
@@ -133,7 +125,6 @@ void SequencerController::updateStepsPerBar( int aStepsPerBar )
 void SequencerController::updateMeasures( int aValue, int aStepsPerBar )
 {
     AudioEngine::amount_of_bars      = aValue;
-    AudioEngine::max_step_position   = aStepsPerBar * AudioEngine::amount_of_bars;
     AudioEngine::max_buffer_position = AudioEngine::bytes_per_bar * AudioEngine::amount_of_bars;
 
     updateStepsPerBar( aStepsPerBar );
@@ -165,7 +156,6 @@ void SequencerController::setPosition( int aPosition )
         aPosition = AudioEngine::max_buffer_position;
 
     AudioEngine::bufferPosition = aPosition;
-    AudioEngine::stepPosition   = ( aPosition / AudioEngine::bytes_per_bar ) * stepsPerBar;
 
     Notifier::broadcast( Notifications::SEQUENCER_POSITION_UPDATED );
 }
@@ -206,7 +196,7 @@ void SequencerController::setBounceState( bool aIsBouncing, int aMaxBuffers, cha
     if ( AudioEngine::bouncing )
     {
         AudioEngine::bufferPosition = 0;
-        AudioEngine::stepPosition   = 0;
+//        AudioEngine::stepPosition   = 0;
     }
     setRecordingState( aIsBouncing, aMaxBuffers, aOutputDirectory );
 }

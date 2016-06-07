@@ -22,8 +22,6 @@
  */
 #include "audiochannel.h"
 
-#include <utilities/debug.h>
-
 unsigned int AudioChannel::INSTANCE_COUNT = 0;
 
 /* constructor / destructor */
@@ -136,8 +134,6 @@ void AudioChannel::writeCache( AudioBuffer* aBuffer, int aReadOffset )
 
     if ( _cacheWritePointer >= _cachedBuffer->bufferSize )
     {
-        Debug::log( "caching completed for channel" );
-
         hasCache           = true;
         isCaching          = false;
         _cacheReadPointer  = 0;
@@ -158,21 +154,7 @@ void AudioChannel::clearCachedBuffer()
 
 void AudioChannel::reset()
 {
-    // we shouldn't invoke delete as we need the events on a next sweep or elsewhere ;-)
-    /*
-    while( !audioEvents.empty())
-    {
-        delete audioEvents.back();
-        audioEvents.pop_back();
-    }*/
     audioEvents.clear();
-    /*
-    while( !liveEvents.empty())
-    {
-        delete liveEvents.back();
-        liveEvents.pop_back();
-    }
-    */
     liveEvents.clear();
     hasLiveEvents = false;
 }

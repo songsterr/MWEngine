@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2013-2015 Igor Zinken - http://www.igorski.nl
+ * Copyright (c) 2013-2016 Igor Zinken - http://www.igorski.nl
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -37,21 +37,27 @@ class SequencerController
         SequencerController();
         ~SequencerController();
         
-        void prepare       ( int aBufferSize, int aSampleRate, float aQueuedTempo, int aTimeSigBeatAmount, int aTimeSigBeatUnit );
-        float getTempo     ();
-        void setTempo      ( float aTempo, int aTimeSigBeatAmount, int aTimeSigBeatUnit );
-        void setTempoNow   ( float aTempo, int aTimeSigBeatAmount, int aTimeSigBeatUnit );
-        void setVolume     ( float aVolume );
-        void setPlaying    ( bool aPlaying );
+        void prepare    ( int aBufferSize, int aSampleRate, float aQueuedTempo, int aTimeSigBeatAmount, int aTimeSigBeatUnit );
+        float getTempo  ();
+        void setTempo   ( float aTempo, int aTimeSigBeatAmount, int aTimeSigBeatUnit );
+        void setTempoNow( float aTempo, int aTimeSigBeatAmount, int aTimeSigBeatUnit );
+        void setVolume  ( float aVolume );
+        void setPlaying ( bool aPlaying );
 
-        void setLoopRange     ( int aStartPosition, int aEndPosition );
-        void setLoopRange     ( int aStartPosition, int aEndPosition, int aStepsPerBar );
-        void updateStepsPerBar( int aStepsPerBar );
-        void updateMeasures   ( int aAmount, int aStepsPerBar );
+        void setLoopRange         ( int aStartPosition, int aEndPosition );
+        void setLoopRange         ( int aStartPosition, int aEndPosition, int aStepsPerBar );
+        int getStepPosition       ();
+        int  getBufferPosition    ();
+        void setBufferPosition    ( int aPosition );
+        void updateStepsPerBar    ( int aStepsPerBar );
+        void updateMeasures       ( int aAmount, int aStepsPerBar );
+        int getSamplesPerBeat     ();
+        int getSamplesPerStep     ();
+        int getSamplesPerBar      ();
+        int getTimeSigBeatAmount  ();
+        int getTimeSigBeatUnit    ();
+        void rewind               ();
         void setNotificationMarker( int aPosition );
-        int  getPosition   ();
-        void setPosition   ( int aPosition );
-        void rewind        ();
 
         BulkCacher* getBulkCacher();
         void cacheAudioEventsForMeasure( int aMeasure );

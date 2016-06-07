@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2013-2014 Igor Zinken - http://www.igorski.nl
+ * Copyright (c) 2013-2016 Igor Zinken - http://www.igorski.nl
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -120,6 +120,18 @@ int BaseAudioEvent::getSampleLength()
 void BaseAudioEvent::setSampleLength( int value )
 {
     _sampleLength = value;
+
+    // for non loopeable-events the existing sample end must not
+    // be smaller than or equal to the sample start nor
+    // exceed the range set by the sample start and sample length
+
+    if ( !_loopeable )
+    {
+        if ( _sampleEnd <= _sampleStart ||
+             _sampleEnd >= ( _sampleStart + _sampleLength )) {
+            _sampleEnd = _sampleStart + ( _sampleLength - 1 );
+        }
+    }
 }
 
 int BaseAudioEvent::getSampleStart()
@@ -130,6 +142,14 @@ int BaseAudioEvent::getSampleStart()
 void BaseAudioEvent::setSampleStart( int value )
 {
     _sampleStart = value;
+
+    if ( _sampleEnd <= _sampleStart )
+    {
+        if ( !_loopeable && _sampleLength > 0 )
+            _sampleEnd = _sampleStart + ( _sampleLength - 1 );
+        else
+            _sampleEnd = _sampleStart;
+    }
 }
 
 int BaseAudioEvent::getSampleEnd()
@@ -139,18 +159,30 @@ int BaseAudioEvent::getSampleEnd()
 
 void BaseAudioEvent::setSampleEnd( int value )
 {
-    _sampleEnd = value;
+    // for non loopeable-events the sample end cannot exceed
+    // beyond the start and the total sample length (it can
+    // be smaller though for a cut-off playback)
+
+    if ( !_loopeable && value >= ( _sampleStart + _sampleLength ))
+        _sampleEnd = _sampleStart + ( _sampleLength - 1 );
+    else
+        _sampleEnd = value;
+}
+
+int BaseAudioEvent::getReadPointer()
+{
+    return _readPointer;
 }
 
 void BaseAudioEvent::positionEvent( int startMeasure, int subdivisions, int offset )
 {
-    int bytesPerBar = AudioEngine::bytes_per_bar; // will always match current tempo, time sig at right sample rate
+    int samplesPerBar = AudioEngine::samples_per_bar; // will always match current tempo, time sig at right sample rate
 
-    int startOffset = bytesPerBar * startMeasure;
-    startOffset    += offset * bytesPerBar / subdivisions;
+    int startOffset = samplesPerBar * startMeasure;
+    startOffset    += offset * samplesPerBar / subdivisions;
 
     setSampleStart( startOffset );
-    setSampleEnd  ( startOffset + getSampleLength() );
+    setSampleEnd  (( startOffset + _sampleLength ) - 1 );
 }
 
 bool BaseAudioEvent::isLoopeable()
@@ -221,67 +253,117 @@ void BaseAudioEvent::mixBuffer( AudioBuffer* outputBuffer, int bufferPosition,
                                 int minBufferPosition, int maxBufferPosition,
                                 bool loopStarted, int loopOffset, bool useChannelRange )
 {
+    if ( !hasBuffer() )
+        return;
+
     lock(); // prevents buffer mutations (from outside threads) during this read cycle
 
-    // read from the pre-cached buffer for sequenced notes
-
-    int startOffset  = getSampleStart();
-    int endOffset    = getSampleEnd();
-    int sampleLength = getSampleLength();
-    int bufferSize   = outputBuffer->bufferSize;
+    int bufferSize = outputBuffer->bufferSize;
 
     // if the output channel amount differs from this events channel amount, we might
     // potentially have a bad time (e.g. engine has mono output while this event is stereo)
     // ideally events should never hold more channels than AudioEngineProps::OUTPUT_CHANNELS
 
     int outputChannels = std::min( _buffer->amountOfChannels, outputBuffer->amountOfChannels );
+    int readPointer, i, c, ca;
+    SAMPLE_TYPE* srcBuffer;
+    SAMPLE_TYPE* tgtBuffer;
 
-    for ( int i = 0; i < bufferSize; ++i )
+    // non-loopeable event whose playback is tied to the Sequencer
+
+    if ( !_loopeable )
     {
-        int readPointer = i + bufferPosition;
-
-        // over the max position ? read from the start ( implies that sequence has started loop )
-        if ( readPointer >= maxBufferPosition )
+        for ( i = 0; i < bufferSize; ++i )
         {
-            if ( useChannelRange )  // TODO: channels use a min buffer position too ? (currently drummachine only)
-                readPointer -= maxBufferPosition;
+            readPointer = i + bufferPosition;
 
-            else if ( !loopStarted )
-                readPointer -= ( maxBufferPosition - minBufferPosition );
-        }
-
-        if ( readPointer >= startOffset && readPointer <= endOffset )
-        {
-            // mind the offset ! ( cached buffer starts at 0 while
-            // the startOffset defines where the event is positioned in the sequencer )
-            readPointer -= startOffset;
-
-            for ( int c = 0; c < outputChannels; ++c )
+            // over the max position ? read from the start ( implies that sequence has started loop )
+            if ( readPointer > maxBufferPosition )
             {
-                SAMPLE_TYPE* srcBuffer = _buffer->getBufferForChannel( c );
-                SAMPLE_TYPE* tgtBuffer = outputBuffer->getBufferForChannel( c );
+                if ( useChannelRange )  // TODO: channels use a min buffer position too ? (currently drummachine only)
+                    readPointer -= maxBufferPosition;
 
-                tgtBuffer[ i ] += ( srcBuffer[ readPointer ] * _volume );
+                else if ( !loopStarted )
+                    break;
             }
-        }
-        else
-        {
-            if ( loopStarted && i >= loopOffset )
+
+            if ( readPointer >= _sampleStart && readPointer <= _sampleEnd )
+            {
+                // mind the offset ! ( cached buffer starts at 0 while
+                // the _sampleStart defines where the event is positioned in the sequencer )
+                readPointer -= _sampleStart;
+
+                for ( c = 0; c < outputChannels; ++c )
+                {
+                    srcBuffer = _buffer->getBufferForChannel( c );
+                    tgtBuffer = outputBuffer->getBufferForChannel( c );
+
+                    tgtBuffer[ i ] += ( srcBuffer[ readPointer ] * _volume );
+                }
+            }
+            else if ( loopStarted && i >= loopOffset )
             {
                 readPointer = minBufferPosition + ( i - loopOffset );
 
-                if ( readPointer >= startOffset && readPointer <= endOffset )
+                if ( readPointer >= _sampleStart && readPointer <= _sampleEnd )
                 {
-                    readPointer -= startOffset;
+                    readPointer -= _sampleStart;
 
-                    for ( int c = 0, ca = _buffer->amountOfChannels; c < ca; ++c )
+                    for ( c = 0, ca = _buffer->amountOfChannels; c < ca; ++c )
                     {
-                        SAMPLE_TYPE* srcBuffer = _buffer->getBufferForChannel( c );
-                        SAMPLE_TYPE* tgtBuffer = outputBuffer->getBufferForChannel( c );
+                        srcBuffer = _buffer->getBufferForChannel( c );
+                        tgtBuffer = outputBuffer->getBufferForChannel( c );
 
                         tgtBuffer[ i ] += ( srcBuffer[ readPointer ] * _volume );
                     }
                 }
+            }
+        }
+    }
+    else
+    {
+        // loopeable events mix their buffer contents using an internal read pointer
+
+        bool monoCopy    = _buffer->amountOfChannels < outputBuffer->amountOfChannels;
+        int maxBufPos    = _buffer->bufferSize - 1;
+        int writePointer = 0;
+        readPointer      = _readPointer;   // use internal read pointer when reading loopeable content
+
+        for ( i = 0; i < bufferSize; ++i, ++writePointer )
+        {
+            readPointer = i + bufferPosition;
+
+            // read sample when the read pointer is within sample start and end points
+            if ( readPointer >= _sampleStart && readPointer <= _sampleEnd )
+            {
+                // use range pointers to read within the specific sample ranges
+                for ( c = 0, ca = _buffer->amountOfChannels; c < ca; ++c )
+                {
+                    // this sample might have less channels than the output buffer
+                    if ( !monoCopy )
+                        srcBuffer = _buffer->getBufferForChannel( c );
+                    else
+                        srcBuffer = _buffer->getBufferForChannel( 0 );
+
+                    tgtBuffer                  = outputBuffer->getBufferForChannel( c );
+                    tgtBuffer[ writePointer ] += ( srcBuffer[ _readPointer ] * _volume );
+                }
+                // this is a loopeable sample (thus using internal read pointer)
+                // set the internal read pointer to the sample start so it keeps playing indefinitely
+
+                if ( ++_readPointer > maxBufPos )
+                    _readPointer = 0;
+
+            }
+            else if ( loopStarted && readPointer > maxBufferPosition )
+            {
+                // in case the Sequencers read offset exceeds the maximum and the
+                // Sequencer is looping, read from start. internal _readPointer takes care of correct offset
+                bufferPosition -= loopOffset;
+
+                // decrement iterators as no write occurred in this iteration
+                --i;
+                --writePointer;
             }
         }
     }
@@ -296,9 +378,13 @@ AudioBuffer* BaseAudioEvent::getBuffer()
 void BaseAudioEvent::setBuffer( AudioBuffer* buffer, bool destroyable )
 {
     _destroyableBuffer = destroyable;
-    destroyBuffer(); // clear existing buffer
-
+    destroyBuffer(); // clears existing buffer (if destroyable)
     _buffer = buffer;
+}
+
+bool BaseAudioEvent::hasBuffer()
+{
+    return _buffer != 0;
 }
 
 AudioBuffer* BaseAudioEvent::synthesize( int aBufferLength )
@@ -323,6 +409,7 @@ void BaseAudioEvent::construct()
     _sampleStart       = 0;
     _sampleEnd         = 0;
     _sampleLength      = 0;
+    _readPointer       = 0;
     _instrument        = 0;
     _deleteMe          = false;
     isSequenced        = true;

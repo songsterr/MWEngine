@@ -44,9 +44,23 @@ through the PATH settings of your system (or adjust the shell scripts accordingl
 
 After compiling the C++ code, the SWIG wrappers will generate the _nl.igorski.lib.audio.nativeaudio_-namespace, making the code available to Java.
 
-You can then run the Ant build script to create the .APK package and deploy it into an attached device / emulator, e.g. :
+You can create the .APK package and deploy it instantly onto an attached device / emulator by using Gradle e.g. :
 
-    ant debug install
+    gradle installDebug
+
+The usual Gradle suspects such as "clean", "build", etc. are also present.
+
+To create a signed release build, add the following into your Gradle's properties file (_~/.gradle/gradle.properties_) and
+replace the values accordingly:
+
+    RELEASE_STORE_FILE={path_to_.keystore_file}
+    RELEASE_STORE_PASSWORD={password_for_.keystore}
+    RELEASE_KEY_ALIAS={alias_for_.keystore}
+    RELEASE_KEY_PASSWORD={password_for_.keystore}
+
+You can now build and sign a releasable APK by running:
+
+    gradle build
     
 ### Unit tests
 
@@ -54,6 +68,17 @@ The library comes with unit tests (_/jni/tests/_), written using the Googletest 
 To run the tests, simply execute the _test.sh_ (sorry Unix-only shell at the moment)-script with a device attached.
 This will also build the library prior to running the tests by calling the build script described above.
 Note: _adb_ must be specified in your global path settings.
+
+To repeat the tests you can provide an optional numerical argument to the shell script, for instance :
+
+    ./sh test.sh 500
+
+will repeat all tests 500 times or break on the first failed test. This can be a convenient method to hunt down a
+unit test that fails at random.
+
+*Note on unit testing:* To build the application for unit testing observe that there are separate makefiles for the
+unit test mode (see suffix _test_ for the .mk files). In short these files set the compiler preprocesser MOCK_ENGINE which
+replaces the OpenSL driver with a mocked driver so the engine can be unit tested "offline".
 
 ### Documentation
 
@@ -74,3 +99,11 @@ To install the demo : first build the library as described above, and then run t
 attached device/emulator (note that emulated devices can only operate at a sample rate of 8 kHz!). This requires both the Android NDK and the Android SDK.
 
 Be sure to point towards the installation locations of these in both the _build.sh_-file and the _local.properties_-file.
+
+### Contributors
+
+MWEngine has received welcome contributions (either suggestions on improving the API or proposal of new features,
+solving of bugs, etc.) from the following developers :
+
+ * Andrey Stavrinov (@hypeastrum)
+ * Aran Arunakiri

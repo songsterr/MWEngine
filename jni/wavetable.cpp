@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2014 Igor Zinken - http://www.igorski.nl
+ * Copyright (c) 2014-2016 Igor Zinken - http://www.igorski.nl
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -32,7 +32,7 @@ WaveTable::WaveTable( int aTableLength, float aFrequency )
     _buffer      = BufferUtility::generateSilentBuffer( tableLength );
     setFrequency( aFrequency );
 
-    SR_OVER_LENGTH = AudioEngineProps::SAMPLE_RATE / ( SAMPLE_TYPE ) tableLength;
+    SR_OVER_LENGTH = ( SAMPLE_TYPE ) AudioEngineProps::SAMPLE_RATE / ( SAMPLE_TYPE ) tableLength;
 }
 
 WaveTable::~WaveTable()
@@ -77,41 +77,21 @@ SAMPLE_TYPE* WaveTable::getBuffer()
     return _buffer;
 }
 
-/**
- * returns a value from the wave table for the current
- * accumulator position, this method also increments
- * the accumulator (and keeps it within bounds)
- *
- * you can "peek" at the sample-level when working with
- * the mixing of AudioBuffers
- */
-SAMPLE_TYPE WaveTable::peek()
+void WaveTable::setBuffer( SAMPLE_TYPE* aBuffer )
 {
-    int readOffset = 0;   // the wave table offset to read from
+    if ( _buffer != 0 )
+        delete[] _buffer;
 
-    if ( _accumulator == 0 )
-        readOffset = 0;
-    else
-        readOffset = ( int ) ( _accumulator / SR_OVER_LENGTH );
-
-    // increment the accumulators read offset
-    _accumulator += _frequency;
-
-    // keep the accumulator in the bounds of the sample frequency
-    if ( _accumulator > AudioEngineProps::SAMPLE_RATE )
-        _accumulator -= AudioEngineProps::SAMPLE_RATE;
-
-    // return the sample present at the calculated offset within the table
-    return _buffer[ readOffset ];
+    _buffer = aBuffer;
 }
 
 void WaveTable::cloneTable( WaveTable* waveTable )
 {
     if ( tableLength != waveTable->tableLength )
     {
-        delete _buffer;
-        _buffer = BufferUtility::generateSilentBuffer( tableLength );
+        delete[] _buffer;
         tableLength = waveTable->tableLength;
+        _buffer = BufferUtility::generateSilentBuffer( tableLength );
     }
     for ( int i = 0; i < tableLength; ++i )
         _buffer[ i ] = waveTable->_buffer[ i ];

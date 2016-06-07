@@ -1,9 +1,9 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Igor Zinken - http://www.igorski.nl
+ * Copyright (c) 2015-2016 Igor Zinken - http://www.igorski.nl
  *
- * wave table generation adapted from sources by Matt @ hackmeopen.com
+ * envelope generation adapted from sources by Christian Schoenebeck
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -30,26 +30,37 @@
 
 namespace EnvelopeGenerator
 {
-    void generate( WaveTable* waveTable, SAMPLE_TYPE startAmplitude, SAMPLE_TYPE endAmplitude, float releaseTime )
+    SAMPLE_TYPE* generateLinear( int tableLength, SAMPLE_TYPE startAmplitude, SAMPLE_TYPE endAmplitude )
     {
-        SAMPLE_TYPE* outputBuffer = waveTable->getBuffer();
-        int numberOfSamples       = waveTable->tableLength;
+        SAMPLE_TYPE* out = new SAMPLE_TYPE[ tableLength ];
 
         // we can't use a 0.0 value as we would get Infinity values, sanitize to a small, positive number instead
 
         startAmplitude = std::max( 0.001, startAmplitude );
         endAmplitude   = std::max( 0.001, endAmplitude );
 
-        SAMPLE_TYPE releaseTimeInSeconds = ( SAMPLE_TYPE )( releaseTime * 1000.0 );
+        SAMPLE_TYPE coeff  = MAX_PHASE + ( log( endAmplitude ) - log( startAmplitude )) / tableLength;
+        SAMPLE_TYPE sample = startAmplitude;
 
-        SAMPLE_TYPE sampleRate = ( SAMPLE_TYPE ) AudioEngineProps::SAMPLE_RATE;
-        SAMPLE_TYPE coeff      = ( log( endAmplitude ) - log( startAmplitude )) / ( releaseTimeInSeconds * sampleRate );
-        SAMPLE_TYPE sample     = startAmplitude;
-
-        for ( int i = 0; i < numberOfSamples; ++i )
+        for ( int i = 0; i < tableLength; ++i )
         {
-            sample += coeff * sample;
-            outputBuffer[ i ] = sample;
+            sample  *= coeff;
+            out[ i ] = sample;
         }
+        return out;
+    }
+
+    SAMPLE_TYPE* generateExponential( int tableLength )
+    {
+        SAMPLE_TYPE* out = new SAMPLE_TYPE[ tableLength ];
+
+        // ensure the first index is 0.0
+
+        out[ 0 ] = 0.0;
+
+        for ( int i = 1; i < tableLength; i++ ) {
+            out[ i ] = pow( 10.0f, (( SAMPLE_TYPE ) ( tableLength - 1 ) - i ) / -200.0f );
+         }
+        return out;
     }
 }

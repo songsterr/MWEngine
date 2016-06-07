@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2014 Igor Zinken - http://www.igorski.nl
+ * Copyright (c) 2014-2016 Igor Zinken - http://www.igorski.nl
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -33,6 +33,7 @@ class WaveTable
 
         int tableLength;
         SAMPLE_TYPE* getBuffer();
+        void setBuffer( SAMPLE_TYPE* aBuffer );
 
         void setFrequency( float aFrequency );
         float getFrequency();
@@ -44,7 +45,26 @@ class WaveTable
         SAMPLE_TYPE getAccumulator();
         void setAccumulator( SAMPLE_TYPE offset );
 
-        SAMPLE_TYPE peek();         // retrieve sample, increments accumulator
+        /**
+         * retrieve a value from the wave table for the current
+         * accumulator position, this method also increments
+         * the accumulator and keeps it within bounds
+         */
+        inline SAMPLE_TYPE peek()
+        {
+            // the wave table offset to read from
+            int readOffset = ( _accumulator == 0 ) ? 0 : ( int ) ( _accumulator / SR_OVER_LENGTH );
+
+            // increment the accumulators read offset
+            _accumulator += _frequency;
+
+            // keep the accumulator in the bounds of the sample frequency
+            if ( _accumulator > AudioEngineProps::SAMPLE_RATE )
+                _accumulator -= AudioEngineProps::SAMPLE_RATE;
+
+            // return the sample present at the calculated offset within the table
+            return _buffer[ readOffset ];
+        }
 
         void cloneTable( WaveTable* waveTable );
         WaveTable* clone();

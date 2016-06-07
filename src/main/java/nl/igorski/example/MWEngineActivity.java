@@ -6,10 +6,10 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.SeekBar;
+import nl.igorski.lib.audio.MWEngine;
 import nl.igorski.lib.audio.definitions.Pitch;
 import nl.igorski.lib.audio.helpers.DevicePropertyCalculator;
 import nl.igorski.lib.audio.nativeaudio.*;
-import nl.igorski.lib.audio.MWEngine;
 
 import java.util.Vector;
 
@@ -24,16 +24,17 @@ public class MWEngineActivity extends Activity
      * will invoke the native layer destructors. As such we hold strong
      * references to JNI Objects during the application lifetime
      */
-    private Finalizer          _finalizer;
-    private LPFHPFilter        _lpfhpf;
-    private SynthInstrument    _synth1;
-    private SynthInstrument    _synth2;
-    private Filter             _filter;
-    private Phaser             _phaser;
-    private Delay              _delay;
-    private MWEngine           _engine;
-    private Vector<SynthEvent> _synth1Events;
-    private Vector<SynthEvent> _synth2Events;
+    private Finalizer _finalizer;
+    private LPFHPFilter _lpfhpf;
+    private SynthInstrument _synth1;
+    private SynthInstrument     _synth2;
+    private Filter              _filter;
+    private Phaser              _phaser;
+    private Delay               _delay;
+    private MWEngine _engine;
+    private SequencerController _sequencerController;
+    private Vector<SynthEvent>  _synth1Events;
+    private Vector<SynthEvent>  _synth2Events;
 
     private boolean _sequencerPlaying = false;
     private boolean _inited           = false;
@@ -81,6 +82,7 @@ public class MWEngineActivity extends Activity
         SAMPLE_RATE = DevicePropertyCalculator.getRecommendedSampleRate( getApplicationContext() );
 
         _engine.createOutput( SAMPLE_RATE, BUFFER_SIZE );
+        _sequencerController = _engine.getSequencerController();
 
         // cache some of the engines properties
 
@@ -104,8 +106,8 @@ public class MWEngineActivity extends Activity
         _synth1 = new SynthInstrument();
         _synth2 = new SynthInstrument();
 
-        _synth1.getTuningForOscillator( 0 ).setWaveform( 2 ); // sawtooth (see global.h for enumerations)
-        _synth2.getTuningForOscillator( 0 ).setWaveform( 5 ); // pulse width modulation
+        _synth1.getOscillatorProperties( 0 ).setWaveform( 2 ); // sawtooth (see global.h for enumerations)
+        _synth2.getOscillatorProperties( 0 ).setWaveform( 5 ); // pulse width modulation
 
         // a high decay for synth 1 (bubblier effect)
         _synth1.getAdsr().setDecay( .9f );
@@ -121,8 +123,8 @@ public class MWEngineActivity extends Activity
         _synth1.getAudioChannel().getProcessingChain().addProcessor( _phaser );
 
         // add some funky delay to synth 2
-        _delay = new Delay( 250f, 2000f, .35f, .5f, 1 );
-        _synth2.getAudioChannel().getProcessingChain().addProcessor(_delay);
+        _delay = new Delay( 250, 2000, .35f, .5f, outputChannels );
+        _synth2.getAudioChannel().getProcessingChain().addProcessor( _delay );
 
         // prepare synthesizer volumes
         _synth2.setVolume( .7f );
@@ -131,7 +133,7 @@ public class MWEngineActivity extends Activity
 
         _synth1Events = new Vector<SynthEvent>();   // remember : strong references!
         _synth2Events = new Vector<SynthEvent>();   // remember : strong references!
-        sequencer.setTempoNow(130.0f, 4, 4);      // 130 BPM at 4/4 time
+        sequencer.setTempoNow( 130.0f, 4, 4 );      // 130 BPM at 4/4 time
 
         // bubbly sixteenth note bass line for synth 1
 
@@ -223,7 +225,7 @@ public class MWEngineActivity extends Activity
             // start/stop the sequencer so we can toggle hearing actual output! ;)
 
             _sequencerPlaying = !_sequencerPlaying;
-            _engine.getSequencerController().setPlaying(_sequencerPlaying);
+            _engine.getSequencerController().setPlaying( _sequencerPlaying );
         }
     }
 
@@ -279,7 +281,7 @@ public class MWEngineActivity extends Activity
 
             final float newTempo = ( progress / 100f ) * ( maxTempo - minTempo ) + minTempo;
 
-            _engine.getSequencerController().setTempo(newTempo, 4, 4); // update to match new tempo in 4/4 time
+            _engine.getSequencerController().setTempo( newTempo, 4, 4 ); // update to match new tempo in 4/4 time
         }
 
         public void onStartTrackingTouch( SeekBar seekBar ) {}
@@ -326,7 +328,17 @@ public class MWEngineActivity extends Activity
             switch ( _notificationEnums[ aNotificationId ])
             {
                 case SEQUENCER_POSITION_UPDATED:
-                    Log.d( LOG_TAG, "sequencer position : " + aNotificationValue );
+
+                    // for this notification id, the notification value describes the precise buffer offset of the
+                    // engine when the notification fired (as a value in the range of 0 - BUFFER_SIZE). using this value
+                    // we can calculate the amount of samples pending until the next step position is reached
+                    // which in turn allows us to calculate the engine latency
+
+                    int sequencerPosition = _sequencerController.getStepPosition();
+                    int elapsedSamples    = _sequencerController.getBufferPosition();
+
+                    Log.d( LOG_TAG, "seq. position: " + sequencerPosition + ", buffer offset: " + aNotificationValue +
+                            ", elapsed samples: " + elapsedSamples );
                     break;
             }
         }

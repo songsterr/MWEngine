@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Igor Zinken - http://www.igorski.nl
+ * Copyright (c) 2016 Igor Zinken - http://www.igorski.nl
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -20,18 +20,23 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "eventutility.h"
-#include "../audioengine.h"
+#ifndef __FASTMATH_H_INCLUDED__
+#define __FASTMATH_H_INCLUDED__
 
-/* public methods */
-
-void EventUtility::positionEvent( BaseAudioEvent* audioEvent, int startMeasure, int subdivisions, int offset )
+/**
+ * faster versions of standard library methods
+ * note that these might not be full-on replacements
+ * of existing methods, as accuracy or error handling is ignored
+ */
+namespace FastMath
 {
-    int bytesPerBar = AudioEngine::bytes_per_bar; // will always match current tempo, time sig at right sample rate
+    /* public methods */
 
-    int startOffset = bytesPerBar * startMeasure;
-    startOffset   += offset * bytesPerBar / subdivisions;
+    extern float fmod( float x, float );
 
-    audioEvent->setSampleStart( startOffset );
-    audioEvent->setSampleEnd( audioEvent->getSampleStart() + audioEvent->getSampleLength() );
+    /* private properties */
+
+    extern float _fmodTmp;
 }
+
+#endif

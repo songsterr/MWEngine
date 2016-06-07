@@ -13,7 +13,7 @@
 // HELPER MATH FUNCTIONS
 // ---------------------
 
-// random integer value between min - max range
+// random integer value between given min - max range
 
 int randomInt( int min, int max )
 {
@@ -34,7 +34,15 @@ float randomFloat()
     return rand() / float( RAND_MAX );
 }
 
-// return a random sample value
+// return a random floating point value between given min - max range
+
+float randomFloat( float min, float max )
+{
+    float f = rand() / float( RAND_MAX );
+    return ( min + f * ( max - min ));
+}
+
+// return a random sample value between given min - max range
 
 SAMPLE_TYPE randomSample( double min, double max )
 {
@@ -116,6 +124,31 @@ bool bufferHasContent( AudioBuffer* audioBuffer )
     return false;
 }
 
+// dump the sample contents of AudioBuffers into the console (NOTE : this will easily
+// flood the console with messages for large buffers!!)
+
+void dumpBufferContents( SAMPLE_TYPE* buffer, int bufferSize )
+{
+    for ( int i = 0; i < bufferSize; ++i )
+        std::cout << i << ":" << buffer[ i ] << "\n";
+}
+
+void dumpBufferContents( AudioBuffer* audioBuffer )
+{
+    std::cout << "\ndumping AudioBuffer with " << audioBuffer->amountOfChannels << " channels of "
+        << audioBuffer->bufferSize << " samples in size\n";
+
+    for ( int c = 0; c < audioBuffer->amountOfChannels; ++c )
+    {
+        std::cout << "---------\n";
+        std::cout << "CHANNEL " << c << ":\n";
+        std::cout << "---------\n";
+
+        SAMPLE_TYPE* buffer = audioBuffer->getBufferForChannel( c );
+        dumpBufferContents( buffer, audioBuffer->bufferSize );
+    }
+}
+
 // ----------------------------
 // HELPER AUDIO EVENT FUNCTIONS
 // ----------------------------
@@ -134,5 +167,28 @@ void deleteAudioEvent( BaseAudioEvent* audioEvent )
     // dispose Instruments (as they shouldn't!), do it here
     BaseInstrument* instrument = audioEvent->getInstrument();
     delete audioEvent;
-   // delete instrument;
+
+    if ( instrument != 0 )
+        instrument->unregisterFromSequencer();
+//    delete instrument; // triggers segmentation fault??
+}
+
+// create a BaseAudioEvent that is enqueued into the sequencer, you'll
+// likely want to delete both this event and its instrument manually
+
+BaseAudioEvent* enqueuedAudioEvent( BaseInstrument* instrument, int sampleLength, int measureNum,
+                                    int subdivision, int offset )
+{
+    BaseAudioEvent* audioEvent = new BaseAudioEvent( instrument );
+    audioEvent->setSampleLength( sampleLength );
+    audioEvent->positionEvent  ( measureNum, subdivision, offset );
+    audioEvent->addToSequencer();
+
+    return audioEvent;
+}
+
+void dumpEventProperties( BaseAudioEvent* audioEvent )
+{
+    std::cout << "\n AudioEvent start: " << audioEvent->getSampleStart() <<
+        " end: " << audioEvent->getSampleEnd() << " (length: " << audioEvent->getSampleLength() << ")";
 }

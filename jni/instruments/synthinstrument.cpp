@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2013-2014 Igor Zinken - http://www.igorski.nl
+ * Copyright (c) 2013-2016 Igor Zinken - http://www.igorski.nl
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -46,11 +46,19 @@ SynthInstrument::~SynthInstrument()
     // when using JNI, we let SWIG invoke destructors when Java references are finalized
     // otherwise we delete and dispose the events directly from this instrument
 #ifndef USE_JNI
-    while ( _audioEvents->size() > 0 )
-        delete _audioEvents->back();
 
-    while ( _liveAudioEvents->size() > 0 )
+    while ( !_audioEvents->empty() )
+    {
+        delete _audioEvents->back();
+        _audioEvents->pop_back();
+    }
+
+    while ( !_liveAudioEvents->empty() )
+    {
         delete _liveAudioEvents->back();
+        _liveAudioEvents->pop_back();
+    }
+
 #endif
 
     while ( oscillators.size() > 0 )
@@ -107,7 +115,7 @@ void SynthInstrument::reserveOscillators( int aAmount )
     if ( oscillators.size() < aAmount )
     {
         while ( oscillators.size() < aAmount )
-            oscillators.push_back( new OscillatorTuning( WaveForms::SINE, 0.0, 0, 0 ) );
+            oscillators.push_back( new OscillatorProperties( WaveForms::SINE, 0.0, 0, 0 ) );
     }
     else {
         while ( oscillators.size() > aAmount ) {
@@ -117,7 +125,7 @@ void SynthInstrument::reserveOscillators( int aAmount )
     }
 }
 
-OscillatorTuning* SynthInstrument::getTuningForOscillator( int aOscillatorNum )
+OscillatorProperties* SynthInstrument::getOscillatorProperties( int aOscillatorNum )
 {
     return oscillators.at( aOscillatorNum );
 }

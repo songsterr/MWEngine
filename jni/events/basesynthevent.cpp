@@ -25,7 +25,6 @@
 #include "../sequencer.h"
 #include "../global.h"
 #include <instruments/synthinstrument.h>
-#include <utilities/utils.h>
 #include <cmath>
 
 unsigned int BaseSynthEvent::INSTANCE_COUNT = 0;
@@ -146,14 +145,14 @@ void BaseSynthEvent::calculateBuffers()
     if ( isSequenced )
     {
         oldLength     = _sampleLength;
-        _sampleLength = ( int )( length * ( float ) AudioEngine::bytes_per_tick );
-        _sampleStart  = position * AudioEngine::bytes_per_tick;
+        _sampleLength = ( int )( length * AudioEngine::samples_per_step );
+        _sampleStart  = position * ( int ) AudioEngine::samples_per_step;
         _sampleEnd    = _sampleStart + _sampleLength;
     }
     else {
         // quick releases of a noteOn-instruction should ring for at least a 64th note
-        _minLength    = AudioEngine::bytes_per_bar / 64;
-        _sampleLength = AudioEngine::bytes_per_bar;     // important for amplitude swell in
+        _minLength    = AudioEngine::samples_per_bar / 64;
+        _sampleLength = AudioEngine::samples_per_bar;     // important for amplitude swell in
         oldLength     = AudioEngineProps::BUFFER_SIZE;  // buffer is as long as the engine's buffer size
         _hasMinLength = false;                          // keeping track if the min length has been rendered
     }
@@ -178,13 +177,13 @@ void BaseSynthEvent::mixBuffer( AudioBuffer* outputBuffer, int bufferPos,
     lock();
 
     // over the max position ? read from the start ( implies that sequence has started loop )
-    if ( bufferPos >= maxBufferPosition )
+    if ( bufferPos > maxBufferPosition )
     {
         if ( useChannelRange )
             bufferPos -= maxBufferPosition;
 
         else if ( !loopStarted )
-            bufferPos -= ( maxBufferPosition - minBufferPosition );
+            return;
     }
 
     int bufferEndPos = bufferPos + AudioEngineProps::BUFFER_SIZE;
@@ -258,7 +257,7 @@ AudioBuffer* BaseSynthEvent::synthesize( int aBufferLength )
     if ( undoDecay )
         _synthInstrument->adsr->setDecay( decay );
 
-    // keep track of the rendered bytes, in case of a key up event
+    // keep track of the rendered samples, in case of a key up event
     // we still want to have the sound ring for the minimum period
     // defined in the constructor instead of cut off immediately
 
@@ -322,7 +321,7 @@ void BaseSynthEvent::setDeletable( bool value )
  * @param isSequenced whether this event is sequenced and only audible in a specific sequence range
  */
 void BaseSynthEvent::init( SynthInstrument* aInstrument, float aFrequency,
-                           int aPosition, int aLength, bool isSequenced )
+                           int aPosition, float aLength, bool isSequenced )
 {
     instanceId         = ++INSTANCE_COUNT;
     _destroyableBuffer = true;  // synth event buffer is always unique and managed by this instance !

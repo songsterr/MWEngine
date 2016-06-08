@@ -1,4 +1,4 @@
-apply plugin: 'com.android.application'
+apply plugin: 'com.android.library'
 
 buildscript {
     repositories {
@@ -9,12 +9,23 @@ buildscript {
     }
 }
 
+task swig(type:Exec) {
+    workingDir = "${project(':MWEngine').projectDir}"
+
+    commandLine "./build.sh"
+
+//    standardOutput = new FileOutputStream("${project(':MWEngine').projectDir}/build/swig.log")
+//    errorOutput = new FileOutputStream("${project(':MWEngine').projectDir}/build/swig.err")
+    doFirst {
+        println "Execution SWIG..."
+    }
+}
+
 android {
-    compileSdkVersion 22
-    buildToolsVersion "22.0.1"
+    compileSdkVersion 23
+    buildToolsVersion "23.0.2"
 
     defaultConfig {
-        applicationId "nl.igorski.example"
         minSdkVersion 14
         targetSdkVersion 17
         versionCode 1
@@ -43,6 +54,24 @@ android {
         main {
             java.srcDirs    = [ 'src/main/java' ]
             jniLibs.srcDirs = [ 'libs' ]
+            jni.srcDirs = []
+            resources.srcDirs = ['src']
+            res.srcDirs = ['res']
+
         }
     }
+    defaultConfig {
+        ndk {
+            moduleName 'libmwengine'
+        }
+    }
+
+    lintOptions {
+        abortOnError false
+    }
+}
+
+afterEvaluate {
+    preReleaseBuild.dependsOn swig
+    preDebugBuild.dependsOn swig
 }

@@ -329,7 +329,7 @@ namespace AudioEngine
                         // only when the integer modulo operation check has passed
                         // TODO : this attempted fmod calculation is inaccurate.
                         //if ( std::fmod(( float ) bufferPosition, samples_per_step ) == 0 )
-                            handleSequencerPositionUpdate( i );
+                        handleSequencerPositionUpdate( i );
                     }
                     if ( marked_buffer_position > 0 && bufferPosition == marked_buffer_position )
                          Notifier::broadcast( Notifications::MARKER_POSITION_REACHED );
@@ -472,7 +472,7 @@ namespace AudioEngine
 
     void handleSequencerPositionUpdate( int bufferOffset )
     {
-        stepPosition = floor( bufferPosition / samples_per_step );
+        stepPosition = bufferPosition / ( int ) samples_per_step;
 
         if ( stepPosition > max_step_position )
             stepPosition = min_step_position;

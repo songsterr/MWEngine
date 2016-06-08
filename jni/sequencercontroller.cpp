@@ -150,7 +150,7 @@ void SequencerController::setBufferPosition( int aPosition )
     AudioEngine::bufferPosition = aPosition;
     AudioEngine::stepPosition   = ( aPosition / AudioEngine::samples_per_bar ) * stepsPerBar;
 
-    Notifier::broadcast( Notifications::SEQUENCER_POSITION_UPDATED );
+    //Notifier::broadcast( Notifications::SEQUENCER_POSITION_UPDATED );
 }
 
 int SequencerController::getSamplesPerBeat()

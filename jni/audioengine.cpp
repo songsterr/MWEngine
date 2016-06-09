@@ -318,9 +318,17 @@ namespace AudioEngine
 
                     outbuffer[ c + ci ] = sample; // interleaved output
                 }
+            }
+            // render the buffer in the audio hardware (unless we're bouncing as writing the output
+            // makes it both unnecessarily audible and stalls this thread's execution)
+            if ( !bouncing )
+                android_AudioOut( p, outbuffer, outSampleNum );
 
-                // update the buffer pointers and sequencer position
-                if ( Sequencer::playing )
+            // update the buffer pointers and sequencer position
+            if ( Sequencer::playing )
+            {
+                // write the accumulated buffers into the output buffer
+                for (i = 0; i < bufferSize; i++)
                 {
                     if ( bufferPosition % ( int ) samples_per_step == 0 )
                     {
@@ -340,10 +348,6 @@ namespace AudioEngine
                         bufferPosition = min_buffer_position;
                 }
             }
-            // render the buffer in the audio hardware (unless we're bouncing as writing the output
-            // makes it both unnecessarily audible and stalls this thread's execution)
-            if ( !bouncing )
-                android_AudioOut( p, outbuffer, outSampleNum );
 
 #ifdef RECORD_TO_DISK
             // write the output to disk if a recording state is active

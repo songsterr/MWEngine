@@ -153,6 +153,9 @@ namespace AudioEngine
 
         while ( thread )
         {
+            // remember playing state for all iteration
+            bool playingIteration = Sequencer::playing;
+
             // erase previous buffer contents
             inbuffer->silenceBuffers();
 
@@ -221,7 +224,7 @@ namespace AudioEngine
                 // only render sequenced events when the sequencer isn't in the paused state
                 // and the channel volume is actually at an audible level! ( > 0 )
 
-                if ( Sequencer::playing && amount > 0 && channelVolume > 0.0 )
+                if ( playingIteration && amount > 0 && channelVolume > 0.0 )
                 {
                     if ( !isCached )
                     {
@@ -325,20 +328,17 @@ namespace AudioEngine
                 android_AudioOut( p, outbuffer, outSampleNum );
 
             // update the buffer pointers and sequencer position
-            if ( Sequencer::playing )
+            // only if was playing state before posting to OpenSL and still in playing state now
+            if ( playingIteration && Sequencer::playing )
             {
                 // write the accumulated buffers into the output buffer
                 for (i = 0; i < bufferSize; i++)
                 {
                     if ( bufferPosition % ( int ) samples_per_step == 0 )
                     {
-                        // for higher accuracy we must calculate using floating point precision, it
-                        // is a more expensive calculation than using integer modulo though, so we check
-                        // only when the integer modulo operation check has passed
-                        // TODO : this attempted fmod calculation is inaccurate.
-                        //if ( std::fmod(( float ) bufferPosition, samples_per_step ) == 0 )
                         handleSequencerPositionUpdate( i );
                     }
+
                     if ( marked_buffer_position > 0 && bufferPosition == marked_buffer_position )
                          Notifier::broadcast( Notifications::MARKER_POSITION_REACHED );
 
@@ -351,7 +351,7 @@ namespace AudioEngine
 
 #ifdef RECORD_TO_DISK
             // write the output to disk if a recording state is active
-            if ( Sequencer::playing && ( recordOutput || recordFromDevice ))
+            if ( playingIteration && ( recordOutput || recordFromDevice ))
             {
 #ifdef RECORD_DEVICE_INPUT
                 if ( recordFromDevice ) // recording from device input ? > write the record buffer
